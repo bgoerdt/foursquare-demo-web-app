@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Venues near Hudl</title>
+<link rel="stylesheet" href="Site.css" type="text/css" />
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+</head> 
+<body>
+	<div id="header-wrapper">
+		<div id="header" class="container">
+			<div id="title">
+				<h1>Venues near Hudl</h1>
+				<span>Developed by Ben Goerdt</span>
+			</div>
+			<div id="search">
+			</div>
+			<div id="buttons" style="text-align:center;vertical-align:bottom">
+				<button id="top25Button">Top 25 Venues</button>
+				<button id="specialsButton">Specials Nearby</button>
+			</div>
+		</div>
+	</div>
+	<div id="wrapper1">
+		<div id="map">
+		</div>
+		<script>
+			// using Leafletjs to show map
+			var map = L.map('map').setView([40.814451, -96.710393], 15);
+			//CloudMade tile layer (w/ my api license): 'http://{s}.tile.cloudmade.com/70d54da157e443798ac4ea0e990e8e8d/997/256/{z}/{x}/{y}.png'
+			//OpenStreetMap tile layer: 'http://{s}.tile.osm.org/{z}/{x}/{y}.png'
+			L.tileLayer('http://{s}.tile.cloudmade.com/70d54da157e443798ac4ea0e990e8e8d/997/256/{z}/{x}/{y}.png', {
+				maxZoom: 18,
+				attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>'
+			}).addTo(map);
+
+			// add marker for Hudl
+			var hudlMarker = L.marker([40.814451, -96.710393]).addTo(map);
+			hudlMarker.bindPopup('<img src="images/hudl-logo.jpg" width="90%" height="90%"/>').openPopup();
+			
+			// array to store currently displayed markers so they can be removed later
+			var markers = [];
+			
+			// send explore GET request to the Foursquare API (top ranked sent first)
+			$("#top25Button").click(function () {
+				clearMarkers();
+				var top25Request = 'https://api.foursquare.com/v2/venues/explore?client_id=5PHXF3545R5Q0LLZTB3Y3L4B52FWETRN1E2Z4WG3PWHXVDSM&client_secret=2TVTWCXM5J3M1RAT4DGIXMVGIJSVVCUUL5W1TEA35GLEJL2Y&v=20140305&ll=40.814451,-96.710393&limit=25';
+				$.getJSON(top25Request, function(data) {
+					$.each(data.response.groups[0].items, function(i,item){
+						var venue = item.venue;
+						var url = '';
+						if(!jQuery.isEmptyObject(venue.url))
+						{
+								url = '<br><a href="'+venue.url+'">'+venue.url+'</a>';
+						}
+						var marker = L.marker([item.venue.location.lat,item.venue.location.lng]);
+						map.addLayer(marker);
+						marker.bindPopup('<b>'+venue.name+'</b><br>'+venue.location.address+'<br>Category: '+venue.categories[0].shortName+'<br>Rating: '+venue.rating+url);
+						markers.push(marker);
+					});
+				});
+			});
+			
+			//send specials GET request to the Foursquare API
+			$("#specialsButton").click(function () {
+				clearMarkers();
+				var specialsRequest = 'https://api.foursquare.com/v2/specials/search?client_id=5PHXF3545R5Q0LLZTB3Y3L4B52FWETRN1E2Z4WG3PWHXVDSM&client_secret=2TVTWCXM5J3M1RAT4DGIXMVGIJSVVCUUL5W1TEA35GLEJL2Y&v=20140305&ll=40.814451,-96.710393&limit=25';
+				$.getJSON(specialsRequest, function(data) {
+					$.each(data.response.specials.items, function(i,item){
+						var venue = item.venue;
+						var marker = L.marker([venue.location.lat,venue.location.lng]);
+						map.addLayer(marker);
+						marker.bindPopup('<b>'+venue.name+'</b><br>Special: '+item.title+'<br>Description: '+item.message);
+						markers.push(marker);
+					});
+				});
+			});
+			
+			// remove all venue markers
+			var clearMarkers = function()
+			{
+				$.each(markers, function(i,marker) {
+					map.removeLayer(markers[i]);
+				});
+			}
+		</script>
+		<div id="names">
+		</div>
+	</div>
+	<div id="wrapper2">
+		<div id="footer" class="container">
+			<div>
+				<header>
+					<h3>benjamin-goerdt@uiowa.edu</h3>
+				</header>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
